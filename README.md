@@ -166,6 +166,72 @@ podman login quay.io
 podman pull quay.io/<your-org>/coolstore-weblogic:latest
 ```
 
+## Deploy to OpenShift
+
+A deployment script is provided that builds the image, pushes it to a registry, and creates all OpenShift resources (Deployment, Service, Route with TLS).
+
+### Prerequisites
+
+- `oc` CLI, logged into an OpenShift cluster (`oc login <cluster-url>`)
+- Podman
+- Access to a container registry that OpenShift can pull from
+
+### Using the OpenShift internal registry
+
+```bash
+./deploy-openshift.sh
+```
+
+The script auto-detects the internal registry route. If the route is not exposed, enable it first:
+
+```bash
+oc patch configs.imageregistry.operator.openshift.io/cluster \
+  --type merge -p '{"spec":{"defaultRoute":true}}'
+```
+
+### Using Quay or another external registry
+
+```bash
+./deploy-openshift.sh --registry quay.io/<your-org>
+```
+
+Make sure you are logged into the registry (`podman login quay.io`) and that OpenShift has a pull secret configured for it.
+
+### Options
+
+| Flag | Description | Default |
+|---|---|---|
+| `--registry <url>` | Container registry to push to | OpenShift internal |
+| `--project <name>` | OpenShift project/namespace | `coolstore` |
+| `--tag <tag>` | Image tag | `latest` |
+
+### What the script creates
+
+| Resource | Name | Description |
+|---|---|---|
+| Secret | `coolstore-credentials` | WebLogic admin username and password |
+| Deployment | `coolstore` | Single replica, 2-4 GB memory, readiness/liveness probes |
+| Service | `coolstore` | ClusterIP on port 8080 |
+| Route | `coolstore` | TLS edge termination with HTTPS redirect |
+
+### After deployment
+
+```bash
+# Check pod status
+oc get pods -l app=coolstore
+
+# Follow logs
+oc logs -f deployment/coolstore
+
+# Get the application URL
+oc get route coolstore -o jsonpath='https://{.spec.host}{"\n"}'
+
+# Tear down everything
+oc delete project coolstore
+```
+
+The first pod startup takes approximately 5 minutes while WebLogic creates the domain, configures resources, and deploys the WAR.
+
 ## REST API Examples
 
 ```bash
