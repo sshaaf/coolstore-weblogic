@@ -8,11 +8,10 @@ services:
       ADMIN_USERNAME: weblogic
       ADMIN_PASSWORD: welcome1
       DOMAIN_NAME: coolstore_domain
-      ADMIN_PORT: 7001
+      ADMIN_PORT: 8080
       PRODUCTION_MODE: dev
     ports:
-      - "7001:7001"  # Admin Server
-      - "7002:7002"  # Admin Server SSL (optional)
+      - "8080:8080"  # Admin Server
     volumes:
       - weblogic_domain:/u01/oracle/user_projects
       - ./target:/u01/app:ro
@@ -22,7 +21,7 @@ services:
     networks:
       - coolstore-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:7001/console || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/console || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

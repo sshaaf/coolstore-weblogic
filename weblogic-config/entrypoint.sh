@@ -8,7 +8,7 @@
 DOMAIN_HOME=/u01/oracle/user_projects/domains/${DOMAIN_NAME:-coolstore_domain}
 ADMIN_USER=${ADMIN_USERNAME:-weblogic}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-welcome1}
-ADMIN_PORT=${ADMIN_PORT:-7001}
+ADMIN_PORT=${ADMIN_PORT:-8080}
 RESOURCES_CONFIGURED_FLAG="$DOMAIN_HOME/.resources_configured"
 
 echo "==============================================="

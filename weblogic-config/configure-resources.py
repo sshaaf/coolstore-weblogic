@@ -9,7 +9,7 @@ import os
 import sys
 
 # Configuration
-admin_url = os.environ.get('ADMIN_URL', 't3://localhost:7001')
+admin_url = os.environ.get('ADMIN_URL', 't3://localhost:8080')
 admin_username = os.environ.get('ADMIN_USERNAME', 'weblogic')
 admin_password = os.environ.get('ADMIN_PASSWORD', 'welcome1')
 

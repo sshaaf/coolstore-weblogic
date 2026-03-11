@@ -6,7 +6,7 @@ Deploy CoolStore Application to WebLogic
 import os
 import sys
 
-admin_url = os.environ.get('ADMIN_URL', 't3://localhost:7001')
+admin_url = os.environ.get('ADMIN_URL', 't3://localhost:8080')
 admin_username = os.environ.get('ADMIN_USERNAME', 'weblogic')
 admin_password = os.environ.get('ADMIN_PASSWORD', 'welcome1')
 app_path = '/u01/app/ROOT.war'
@@ -58,11 +58,11 @@ try:
         print('Target: AdminServer')
         print('')
         print('Access the application at:')
-        print('  http://localhost:7001/')
-        print('  http://localhost:7001/services/products')
+        print('  http://localhost:8080/')
+        print('  http://localhost:8080/services/products')
         print('')
         print('Admin Console:')
-        print('  http://localhost:7001/console')
+        print('  http://localhost:8080/console')
 
     except Exception, e:
         print('')

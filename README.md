@@ -74,11 +74,11 @@ Once you see `WebLogic Admin Server Ready!` in the logs, the application is avai
 
 | URL | Description |
 |---|---|
-| http://localhost:7001/ | Web storefront |
-| http://localhost:7001/services/products | Products REST API |
-| http://localhost:7001/services/cart/{cartId} | Shopping cart API |
-| http://localhost:7001/services/orders | Orders REST API |
-| http://localhost:7001/console | WebLogic Admin Console |
+| http://localhost:8080/ | Web storefront |
+| http://localhost:8080/services/products | Products REST API |
+| http://localhost:8080/services/cart/{cartId} | Shopping cart API |
+| http://localhost:8080/services/orders | Orders REST API |
+| http://localhost:8080/console | WebLogic Admin Console |
 
 Admin console credentials: `weblogic` / `welcome1`
 
@@ -130,7 +130,7 @@ Run the built image standalone (no compose needed):
 
 ```bash
 podman run -d --name coolstore \
-  -p 7001:7001 \
+  -p 8080:8080 \
   -e ADMIN_USERNAME=weblogic \
   -e ADMIN_PASSWORD=welcome1 \
   -e DOMAIN_NAME=coolstore_domain \
@@ -170,19 +170,19 @@ podman pull quay.io/<your-org>/coolstore-weblogic:latest
 
 ```bash
 # List all products
-curl http://localhost:7001/services/products
+curl http://localhost:8080/services/products
 
 # Get shopping cart
-curl http://localhost:7001/services/cart/123
+curl http://localhost:8080/services/cart/123
 
 # Add an item to cart (itemId=329299, quantity=1)
-curl -X POST http://localhost:7001/services/cart/123/329299/1
+curl -X POST http://localhost:8080/services/cart/123/329299/1
 
 # Checkout
-curl -X POST http://localhost:7001/services/cart/checkout/123
+curl -X POST http://localhost:8080/services/cart/checkout/123
 
 # List orders
-curl http://localhost:7001/services/orders
+curl http://localhost:8080/services/orders
 ```
 
 ## Technology Stack

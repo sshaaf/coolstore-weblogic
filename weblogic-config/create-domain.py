@@ -11,7 +11,7 @@ import os
 admin_username = os.environ.get('ADMIN_USERNAME', 'weblogic')
 admin_password = os.environ.get('ADMIN_PASSWORD', 'welcome1')
 domain_name = os.environ.get('DOMAIN_NAME', 'coolstore_domain')
-admin_port = int(os.environ.get('ADMIN_PORT', '7001'))
+admin_port = int(os.environ.get('ADMIN_PORT', '8080'))
 domain_path = '/u01/oracle/user_projects/domains/' + domain_name
 
 print('========================================')
