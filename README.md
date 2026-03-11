@@ -1,182 +1,198 @@
 # CoolStore Monolith
 
-This repository has the complete coolstore monolith built as a Java EE 7 application. To deploy it on JBoss 7.4 follow the instructions below
+A Java EE 7 e-commerce application deployed on Oracle WebLogic Server 12.2.1.4. Uses an embedded H2 database — no external database required.
 
+## Prerequisites
 
-## Pre requisite
+- Java 8 (JDK)
+- Maven 3.x
+- Podman (with a running machine) and podman-compose
 
-* JBoss 7.4 zip installation
-* Keycloak v20.0.5 zip installation
-* podman or docker, tested with podman version 4.3.1
-* maven, tested with maven version 3.8.5
-* OpenJDK, tested with version 17.0.5
+## Download the WebLogic Container Image
 
-## Start a postgreSQL database
+The application runs on Oracle WebLogic Server. The container image must be pulled from Oracle Container Registry, which requires a free Oracle account and an auth token.
 
-```
-podman run --name myPostgresDb \
-   -p 5432:5432 \
-   -e POSTGRES_USER=postgresUser \
-   -e POSTGRES_PASSWORD=postgresPW \
-   -e POSTGRES_DB=postgresDB \
-   -d postgres
+A helper script is provided to handle login and download:
+
+```bash
+./download-container-image.sh
 ```
 
-## Start keycloak
+The script will prompt for your Oracle credentials. Use your **auth token** as the password (not your Oracle account password).
 
-Extract keycloak-20.0.5.zip
+To generate an auth token:
 
-```cd keycloak-20.0.5```
+1. Sign in at https://cloud.oracle.com
+2. Click your profile icon (top-right) and select **User Settings**
+3. Under **Auth Tokens**, click **Generate Token**
+4. Copy the token immediately — it is only shown once
 
-Start keycloak in dev mode listening on port 8081
+You also need to accept the WebLogic license (one-time):
 
-``` ./bin/kc.sh start-dev --http-port=8081 ```
+1. Go to https://container-registry.oracle.com
+2. Sign in, search for `weblogic`
+3. Click **middleware/weblogic**, then **Continue** and accept the license
 
-Open http://127.0.0.1:8081 in your browser
-
-
-Set an administrator username and password, then login to keycloak using these credentials
-
-Click on the "Master" dropdown, and select "Create Realm"
-
-Click on "Browse" and locate the file realm-export.json in this repo.
-
-Click on "Create" to create the "eap" realm
-
-Click on "Users" and "Create new user"
-
-Enter a username, e.g. "user1" and click on "Create"
-
-From the next form, click on the "Credentials" tab and "Set password"
-
-Set a password and password confirmation, and unselect "Temporary"
-
-Click on "Save" to store the password.
-
-Keycloak is now configured correctly
-
-## Configure JBoss 7.4
-
-Unzip jboss-eap-7.4.0.zip
-
-``` cd jboss-eap-7.4/jboss-eap-7.4 ```
-
-Create the folder modules/org/postgresql/main
-
-``` mkdir -p modules/org/postgresql/main ```
-
-
-Download the postgres jdbc driver from https://jdbc.postgresql.org/download/  e.g. https://jdbc.postgresql.org/download/postgresql-42.5.4.jar
-
- Copy postgres jar file to modules/org/postgresql/main
-
-create module.xml  -- ensure the filename matches the filename downloaded in the previous step
+## Project Structure
 
 ```
-cat <<EOF > modules/org/postgresql/main/module.xml
-<?xml version="1.0" encoding="UTF-8"?>
-<module xmlns="urn:jboss:module:1.0" name="org.postgresql">
- <resources>
- <resource-root path="postgresql-42.5.4.jar"/>
- </resources>
- <dependencies>
- <module name="javax.api"/>
- <module name="javax.transaction.api"/>
- </dependencies>
-</module>
-EOF
+├── pom.xml                     # Maven build (produces ROOT.war)
+├── docker-compose.yml          # Podman/Docker compose for local dev
+├── weblogic-config/            # WebLogic domain and resource setup scripts
+│   ├── create-domain.py        # WLST: creates the WebLogic domain
+│   ├── configure-resources.py  # WLST: configures JDBC (H2) and JMS resources
+│   ├── deploy-app.py           # WLST: deploys the WAR to the server
+│   └── entrypoint.sh           # Container entrypoint (orchestrates all of the above)
+└── src/
+    ├── main/java/              # Application source code
+    ├── main/resources/
+    │   └── META-INF/
+    │       ├── persistence.xml # JPA config (EclipseLink + H2)
+    │       └── import.sql      # Seed data loaded on startup
+    └── main/webapp/            # Web frontend + deployment descriptors
 ```
 
+## Build
 
-Start JBoss EAP 7.4 in full high availability mode
-
-From the jboss-eap-7.4 folder run:
-
-```./jboss-eap-7.4-2/bin/standalone.sh -c standalone-full-ha.xml  -Djboss.node.name=node1 ```
-
-In another terminal, start the jboss cli, from the jboss7.4 installation folder run 
-
-```  ./bin/jboss-cli.sh --connect ```
-
-Run the following commands:
-
-```
-/subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql)
+```bash
+mvn clean package
 ```
 
+This produces `target/ROOT.war`.
+
+## Run Locally with Podman
+
+### Start
+
+```bash
+mvn clean package && podman-compose up
 ```
- data-source add --name=CoolstoreDS --jndi-name=java:jboss/datasources/CoolstoreDS --driver-name=postgresql --connection-url=jdbc:postgresql://127.0.0.1:5432/postgresDB --user-name=postgresUser --password=postgresPW
- ```
 
+First startup takes approximately 5 minutes (domain creation, resource configuration, app deployment). Subsequent starts are faster because the domain is persisted in a named volume.
+
+Once you see `WebLogic Admin Server Ready!` in the logs, the application is available at:
+
+| URL | Description |
+|---|---|
+| http://localhost:7001/ | Web storefront |
+| http://localhost:7001/services/products | Products REST API |
+| http://localhost:7001/services/cart/{cartId} | Shopping cart API |
+| http://localhost:7001/services/orders | Orders REST API |
+| http://localhost:7001/console | WebLogic Admin Console |
+
+Admin console credentials: `weblogic` / `welcome1`
+
+### Stop
+
+```bash
+podman-compose down
 ```
-jms-topic add --topic-address=topic.orders --entries=topic/orders
 
-/subsystem=messaging-activemq/server=default:write-attribute(name=cluster-password, value=password)
+### Full Reset
+
+Wipe the WebLogic domain and H2 database to start completely fresh:
+
+```bash
+podman-compose down
+podman pod rm -af && podman rm -af
+podman volume rm coolstore_weblogic_domain coolstore_h2_data
 ```
 
-## Build and deploy the application
+### View Logs
 
-From the root of this repo, run: 
-
-`mvn package`
-
-Set the JBOSS_HOME env variable e.g. 
-
-`export JBOSS_HOME=~/jboss-eap-7.4/jboss-eap-7.4`
-
-Run the jboss cli: 
-
-` $JBOSS_HOME/bin/jboss-cli.sh`
-
-Run the following command to deploy the application:
-
- `deploy ./target/ROOT.war`
-
-Navigate to http://127.0.0.1:8080
-
-![coolstore](assets/coolstore.png "coolstore")
-
-From the coostore, click on "Sign in" in the top right
-
-Login with the user credentials created on Keycloak, e.g. user1
-
-You should now be able to complete the checkout process.
-
-## Start a second instance.
-
-Make a copy of the jboss-eap-7.4/jboss-eap-7.4 e.g jboss-eap-7.4/jboss-eap-7.4-2
-
-Within the jboss-eap-7.4 folder you should now see jboss-eap-7.4 and jboss-eap-7.4-2
-
-In the jboss-eap-7.4-2, remove the contents of standalone/data/activemq
-
-From the jboss-eap-7.4 folder run:
-
-`./jboss-eap-7.4-2/bin/standalone.sh -c standalone-full-ha.xml -Djboss.socket.binding.port-offset=100  -Djboss.node.name=node2`
-
-## Monitor the logs
-
-Open up two terminals in the jboss-eap-7.4 folder
-
-Run:
-
-`tail -f jboss-eap-7.4/standalone/log/server.log` 
-
-in one terminal and 
-
-`tail -f jboss-eap-7.4-2/standalone/log/server.log` 
-
-in the other
-
-## Testing clustering
-
-If you perform a test checkout of an item, you should see both nodes processing the messages in the logs e.g.
-
+```bash
+podman logs -f coolstore-weblogic
 ```
-2023-03-02 14:41:23,131 INFO  [stdout] (Thread-3 (ActiveMQ-client-global-threads)) 
-2023-03-02 14:41:23,131 INFO  [stdout] (Thread-3 (ActiveMQ-client-global-threads)) Message recd !
-2023-03-02 14:41:23,131 INFO  [stdout] (Thread-3 (ActiveMQ-client-global-threads)) Received order: {"orderValue":10.49,"customerName":"Karl Svensson","customerEmail":"karl@gmail.com","retailPrice":10.0,"discount":-2.5,"shippingFee":2.99,"shippingDiscount":0.0,"items":[{"productSku":"329299","quantity":1}]}
-2023-03-02 14:41:23,132 INFO  [stdout] (Thread-3 (ActiveMQ-client-global-threads)) Order object is Order [orderId=0, customerName=Karl Svensson, customerEmail=karl@gmail.com, orderValue=10.49, retailPrice=10.0, discount=-2.5, shippingFee=2.99, shippingDiscount=0.0, itemList=[OrderItem [productId=329299, quantity=1]]]
 
+## Build a Container Image
 
+Create a self-contained image with the WAR baked in:
+
+```bash
+mvn clean package
+
+podman build -t coolstore-weblogic:latest -f Containerfile .
 ```
+
+Using this `Containerfile`:
+
+```dockerfile
+FROM container-registry.oracle.com/middleware/weblogic:12.2.1.4-dev
+
+COPY weblogic-config/ /u01/config/
+COPY target/ROOT.war /u01/app/ROOT.war
+COPY target/ROOT/WEB-INF/lib/h2-1.4.200.jar /u01/app/h2-1.4.200.jar
+
+CMD ["/bin/bash", "/u01/config/entrypoint.sh"]
+```
+
+Run the built image standalone (no compose needed):
+
+```bash
+podman run -d --name coolstore \
+  -p 7001:7001 \
+  -e ADMIN_USERNAME=weblogic \
+  -e ADMIN_PASSWORD=welcome1 \
+  -e DOMAIN_NAME=coolstore_domain \
+  coolstore-weblogic:latest
+```
+
+## Push to a Private Quay Repository
+
+Tag and push the image to your Quay registry:
+
+```bash
+# Log in to Quay (once)
+podman login quay.io
+
+# Tag the image
+podman tag coolstore-weblogic:latest quay.io/<your-org>/coolstore-weblogic:latest
+
+# Push
+podman push quay.io/<your-org>/coolstore-weblogic:latest
+```
+
+To use a specific version tag:
+
+```bash
+podman tag coolstore-weblogic:latest quay.io/<your-org>/coolstore-weblogic:1.0.0
+podman push quay.io/<your-org>/coolstore-weblogic:1.0.0
+```
+
+Pulling from the private repo on another machine:
+
+```bash
+podman login quay.io
+podman pull quay.io/<your-org>/coolstore-weblogic:latest
+```
+
+## REST API Examples
+
+```bash
+# List all products
+curl http://localhost:7001/services/products
+
+# Get shopping cart
+curl http://localhost:7001/services/cart/123
+
+# Add an item to cart (itemId=329299, quantity=1)
+curl -X POST http://localhost:7001/services/cart/123/329299/1
+
+# Checkout
+curl -X POST http://localhost:7001/services/cart/checkout/123
+
+# List orders
+curl http://localhost:7001/services/orders
+```
+
+## Technology Stack
+
+| Component | Technology |
+|---|---|
+| Runtime | Oracle WebLogic Server 12.2.1.4 |
+| Language | Java 8, Java EE 7 |
+| JPA Provider | EclipseLink 2.6 (WebLogic built-in) |
+| Database | H2 1.4.200 (embedded) |
+| JAX-RS | Jersey 2.x (WebLogic built-in) |
+| Messaging | WebLogic JMS |
+| Frontend | AngularJS + PatternFly |
