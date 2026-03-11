@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<weblogic-web-app xmlns="http://xmlns.oracle.com/weblogic/weblogic-web-app"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://xmlns.oracle.com/weblogic/weblogic-web-app
+                  http://xmlns.oracle.com/weblogic/weblogic-web-app/1.9/weblogic-web-app.xsd">
+
+    <context-root>/</context-root>
+
+    <!-- JDBC DataSource Reference -->
+    <resource-description>
+        <res-ref-name>jdbc/CoolstoreDS</res-ref-name>
+        <jndi-name>jdbc/CoolstoreDS</jndi-name>
+    </resource-description>
+
+    <!-- JMS Topic Reference -->
+    <message-destination-descriptor>
+        <message-destination-name>OrdersTopic</message-destination-name>
+        <destination-jndi-name>jms/topic/orders</destination-jndi-name>
+    </message-destination-descriptor>
+
+    <!-- JMS Connection Factory Reference -->
+    <resource-description>
+        <res-ref-name>jms/ConnectionFactory</res-ref-name>
+        <jndi-name>weblogic.jms.ConnectionFactory</jndi-name>
+    </resource-description>
+
+    <!-- Session Configuration -->
+    <session-descriptor>
+        <persistent-store-type>replicated_if_clustered</persistent-store-type>
+    </session-descriptor>
+
+    <!-- Container Descriptor -->
+    <container-descriptor>
+        <prefer-application-packages>
+            <package-name>org.slf4j.*</package-name>
+        </prefer-application-packages>
+    </container-descriptor>
+
+</weblogic-web-app>

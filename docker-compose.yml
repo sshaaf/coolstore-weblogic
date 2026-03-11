@@ -1,0 +1,41 @@
+services:
+  weblogic:
+    # WebLogic 12.2.1.4 - Official Java EE 7 Support
+    image: container-registry.oracle.com/middleware/weblogic:12.2.1.4-dev
+    container_name: coolstore-weblogic
+    hostname: wlsadmin
+    environment:
+      ADMIN_USERNAME: weblogic
+      ADMIN_PASSWORD: welcome1
+      DOMAIN_NAME: coolstore_domain
+      ADMIN_PORT: 7001
+      PRODUCTION_MODE: dev
+    ports:
+      - "7001:7001"  # Admin Server
+      - "7002:7002"  # Admin Server SSL (optional)
+    volumes:
+      - weblogic_domain:/u01/oracle/user_projects
+      - ./target:/u01/app:ro
+      - ./weblogic-config:/u01/config:ro
+      - h2_data:/u01/data
+    command: ["/bin/bash", "/u01/config/entrypoint.sh"]
+    networks:
+      - coolstore-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7001/console || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s
+    mem_limit: 4g
+    mem_reservation: 2g
+
+volumes:
+  weblogic_domain:
+    driver: local
+  h2_data:
+    driver: local
+
+networks:
+  coolstore-network:
+    driver: bridge

@@ -113,12 +113,9 @@ public class ShoppingCartService  {
 
 	private static ShippingServiceRemote lookupShippingServiceRemote() {
         try {
-            final Hashtable<String, String> jndiProperties = new Hashtable<>();
-            jndiProperties.put(Context.INITIAL_CONTEXT_FACTORY, "org.wildfly.naming.client.WildFlyInitialContextFactory");
-
-            final Context context = new InitialContext(jndiProperties);
-
-            return (ShippingServiceRemote) context.lookup("ejb:/ROOT/ShippingService!" + ShippingServiceRemote.class.getName());
+            final Context context = new InitialContext();
+            // WebLogic local lookup - no need for remote JNDI properties in same container
+            return (ShippingServiceRemote) context.lookup("ejb/ShippingService");
         } catch (NamingException e) {
             throw new RuntimeException(e);
         }

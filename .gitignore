@@ -4,3 +4,39 @@ target
 .idea
 .settings
 .vscode
+.project
+
+# WebLogic specific
+.wlnotdelete
+.beabuild.txt
+weblogic.xml.bak
+weblogic-ejb-jar.xml.bak
+
+# Database
+*.db
+*.sqlite
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Docker volumes
+postgres_data/
+
+# Environment files
+.env
+*.env.local
+
+# JDBC drivers
+postgresql-*.jar
+!lib/postgresql-*.jar
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~

@@ -4,6 +4,7 @@ import java.util.logging.Logger;
 import javax.ejb.Stateless;
 import javax.annotation.Resource;
 import javax.inject.Inject;
+import javax.jms.ConnectionFactory;
 import javax.jms.JMSContext;
 import javax.jms.Topic;
 
@@ -16,20 +17,17 @@ public class ShoppingCartOrderProcessor  {
     @Inject
     Logger log;
 
+    @Resource(lookup = "weblogic.jms.ConnectionFactory")
+    private ConnectionFactory connectionFactory;
 
-    @Inject
-    private transient JMSContext context;
-
-    @Resource(lookup = "java:/topic/orders")
+    @Resource(lookup = "jms/topic/orders")
     private Topic ordersTopic;
 
-    
-  
-    public void  process(ShoppingCart cart) {
+    public void process(ShoppingCart cart) {
         log.info("Sending order from processor: ");
-        context.createProducer().send(ordersTopic, Transformers.shoppingCartToJson(cart));
+        try (JMSContext context = connectionFactory.createContext()) {
+            context.createProducer().send(ordersTopic, Transformers.shoppingCartToJson(cart));
+        }
     }
-
-
 
 }

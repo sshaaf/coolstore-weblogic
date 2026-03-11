@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<weblogic-ejb-jar xmlns="http://xmlns.oracle.com/weblogic/weblogic-ejb-jar"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://xmlns.oracle.com/weblogic/weblogic-ejb-jar
+                  http://xmlns.oracle.com/weblogic/weblogic-ejb-jar/1.9/weblogic-ejb-jar.xsd">
+
+    <!-- Shopping Cart Service - Stateful Session Bean -->
+    <weblogic-enterprise-bean>
+        <ejb-name>ShoppingCartService</ejb-name>
+        <stateful-session-descriptor>
+            <stateful-session-cache>
+                <max-beans-in-cache>1000</max-beans-in-cache>
+                <idle-timeout-seconds>600</idle-timeout-seconds>
+            </stateful-session-cache>
+            <persistent-store-dir>cart-persistence</persistent-store-dir>
+            <stateful-session-clustering>
+                <home-is-clusterable>true</home-is-clusterable>
+                <replication-type>InMemory</replication-type>
+            </stateful-session-clustering>
+        </stateful-session-descriptor>
+    </weblogic-enterprise-bean>
+
+    <!-- Shipping Service - Stateless Session Bean with Remote Interface -->
+    <weblogic-enterprise-bean>
+        <ejb-name>ShippingService</ejb-name>
+        <jndi-name>ejb/ShippingService</jndi-name>
+        <local-jndi-name>ejb/local/ShippingService</local-jndi-name>
+    </weblogic-enterprise-bean>
+
+    <!-- Order Service MDB -->
+    <weblogic-enterprise-bean>
+        <ejb-name>OrderServiceMDB</ejb-name>
+        <message-driven-descriptor>
+            <pool>
+                <max-beans-in-free-pool>200</max-beans-in-free-pool>
+                <initial-beans-in-free-pool>20</initial-beans-in-free-pool>
+            </pool>
+            <destination-jndi-name>jms/topic/orders</destination-jndi-name>
+            <connection-factory-jndi-name>weblogic.jms.ConnectionFactory</connection-factory-jndi-name>
+        </message-driven-descriptor>
+    </weblogic-enterprise-bean>
+
+    <!-- Inventory Notification MDB -->
+    <weblogic-enterprise-bean>
+        <ejb-name>InventoryNotificationMDB</ejb-name>
+        <message-driven-descriptor>
+            <pool>
+                <max-beans-in-free-pool>100</max-beans-in-free-pool>
+                <initial-beans-in-free-pool>10</initial-beans-in-free-pool>
+            </pool>
+            <destination-jndi-name>jms/topic/orders</destination-jndi-name>
+            <connection-factory-jndi-name>weblogic.jms.ConnectionFactory</connection-factory-jndi-name>
+        </message-driven-descriptor>
+    </weblogic-enterprise-bean>
+
+    <!-- Other Stateless Session Beans -->
+    <weblogic-enterprise-bean>
+        <ejb-name>ShoppingCartOrderProcessor</ejb-name>
+    </weblogic-enterprise-bean>
+
+    <weblogic-enterprise-bean>
+        <ejb-name>OrderService</ejb-name>
+    </weblogic-enterprise-bean>
+
+    <weblogic-enterprise-bean>
+        <ejb-name>ProductService</ejb-name>
+    </weblogic-enterprise-bean>
+
+    <weblogic-enterprise-bean>
+        <ejb-name>CatalogService</ejb-name>
+    </weblogic-enterprise-bean>
+
+    <weblogic-enterprise-bean>
+        <ejb-name>PromoService</ejb-name>
+    </weblogic-enterprise-bean>
+
+</weblogic-ejb-jar>

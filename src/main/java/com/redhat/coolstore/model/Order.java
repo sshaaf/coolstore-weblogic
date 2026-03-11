@@ -38,9 +38,6 @@ public class Order implements Serializable {
 
 	private double shippingDiscount;
 
-	@Column(name="TOTAL_PRICE")
-
-	
 	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
 	@JoinColumn(name="ORDER_ID")
 	private List<OrderItem> itemList = new ArrayList<>();
