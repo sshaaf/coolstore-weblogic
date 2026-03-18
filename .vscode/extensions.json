@@ -1,6 +1,6 @@
 {
   "recommendations": [
-    "Konveyor.konveyor",
-    "Konveyor.konveyor-java" 
+    "redhat.mta-vscode-extension",
+    "redhat.java" 
   ]
 }
