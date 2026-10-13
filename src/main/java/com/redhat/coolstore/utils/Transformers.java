@@ -40,7 +40,9 @@ public class Transformers {
             prod.setLink(entity.getInventory().getLink());
             prod.setQuantity(entity.getInventory().getQuantity());
         } else {
-            log.warning("Inventory for " + entity.getName() + "[" + entity.getItemId()+ "] unknown and missing");
+            log.warning("Inventory for " + entity.getName() + "[" + entity.getItemId() + "] unknown and missing; quantity set to 0");
+            prod.setQuantity(0);
+            prod.setLocation("unknown");
         }
         return prod;
     }

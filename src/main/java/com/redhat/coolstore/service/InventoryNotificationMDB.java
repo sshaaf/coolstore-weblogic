@@ -7,6 +7,7 @@ import javax.ejb.ActivationConfigProperty;
 import javax.ejb.MessageDriven;
 import javax.inject.Inject;
 import javax.jms.*;
+import java.util.logging.Logger;
 
 @MessageDriven(name = "InventoryNotificationMDB", activationConfig = {
     @ActivationConfigProperty(propertyName = "destinationLookup", propertyValue = "jms/topic/orders"),
@@ -17,13 +18,16 @@ public class InventoryNotificationMDB implements MessageListener {
     private static final int LOW_THRESHOLD = 50;
 
     @Inject
+    Logger log;
+
+    @Inject
     private CatalogService catalogService;
 
     @Override
     public void onMessage(Message rcvMessage) {
         TextMessage msg;
         try {
-            System.out.println("Inventory notification - received message");
+            log.info("Inventory notification - received message");
             if (rcvMessage instanceof TextMessage) {
                 msg = (TextMessage) rcvMessage;
                 String orderStr = msg.getBody(String.class);
@@ -32,14 +36,15 @@ public class InventoryNotificationMDB implements MessageListener {
                     int old_quantity = catalogService.getCatalogItemById(orderItem.getProductId()).getInventory().getQuantity();
                     int new_quantity = old_quantity - orderItem.getQuantity();
                     if (new_quantity < LOW_THRESHOLD) {
-                        System.out.println("Inventory for item " + orderItem.getProductId() + " is below threshold (" + LOW_THRESHOLD + "), contact supplier!");
+                        log.warning("Inventory for item " + orderItem.getProductId() + " is below threshold (" + LOW_THRESHOLD + "), contact supplier!");
                     } else {
                         orderItem.setQuantity(new_quantity);
                     }
                 });
             }
         } catch (JMSException jmse) {
-            System.err.println("An exception occurred: " + jmse.getMessage());
+            // Re-throw as RuntimeException so the MDB container marks the message for redelivery
+            throw new RuntimeException("Failed to process inventory notification message", jmse);
         }
     }
 }

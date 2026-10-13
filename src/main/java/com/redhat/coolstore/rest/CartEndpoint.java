@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import javax.enterprise.context.SessionScoped;
 import javax.inject.Inject;
@@ -14,7 +15,9 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import com.redhat.coolstore.model.Product;
 import com.redhat.coolstore.model.ShoppingCart;
@@ -26,6 +29,9 @@ import com.redhat.coolstore.service.ShoppingCartService;
 public class CartEndpoint implements Serializable {
 
 	private static final long serialVersionUID = -7227732980791688773L;
+
+	@Inject
+	Logger log;
 
 	@Inject
 	private ShoppingCartService shoppingCartService;
@@ -49,10 +55,13 @@ public class CartEndpoint implements Serializable {
 	@Produces(MediaType.APPLICATION_JSON)
 	public ShoppingCart add(@PathParam("cartId") String cartId,
 							@PathParam("itemId") String itemId,
-							@PathParam("quantity") int quantity) throws Exception {
+							@PathParam("quantity") int quantity) {
 		ShoppingCart cart = shoppingCartService.getShoppingCart(cartId);
 
 		Product product = shoppingCartService.getProduct(itemId);
+		if (product == null) {
+			throw new WebApplicationException("Product not found: " + itemId, Response.Status.NOT_FOUND);
+		}
 
 		ShoppingCartItem sci = new ShoppingCartItem();
 		sci.setProduct(product);
@@ -63,9 +72,10 @@ public class CartEndpoint implements Serializable {
 		try {
 			shoppingCartService.priceShoppingCart(cart);
 			cart.setShoppingCartItemList(dedupeCartItems(cart.getShoppingCartItemList()));
-		} catch (Exception ex) {
+		} catch (RuntimeException ex) {
+			log.warning("Failed to price cart " + cartId + ", rolling back item addition: " + ex.getMessage());
 			cart.removeShoppingCartItem(sci);
-			throw ex;
+			throw new WebApplicationException("Failed to price cart", ex, Response.Status.INTERNAL_SERVER_ERROR);
 		}
 
 		return cart;
@@ -75,7 +85,7 @@ public class CartEndpoint implements Serializable {
 	@Path("/{cartId}/{tmpId}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public ShoppingCart set(@PathParam("cartId") String cartId,
-							@PathParam("tmpId") String tmpId) throws Exception {
+							@PathParam("tmpId") String tmpId) {
 
 		ShoppingCart cart = shoppingCartService.getShoppingCart(cartId);
 		ShoppingCart tmpCart = shoppingCartService.getShoppingCart(tmpId);
@@ -88,8 +98,9 @@ public class CartEndpoint implements Serializable {
 		try {
 			shoppingCartService.priceShoppingCart(cart);
 			cart.setShoppingCartItemList(dedupeCartItems(cart.getShoppingCartItemList()));
-		} catch (Exception ex) {
-			throw ex;
+		} catch (RuntimeException ex) {
+			log.warning("Failed to price cart " + cartId + ": " + ex.getMessage());
+			throw new WebApplicationException("Failed to price cart", ex, Response.Status.INTERNAL_SERVER_ERROR);
 		}
 
 		return cart;
@@ -100,7 +111,7 @@ public class CartEndpoint implements Serializable {
 	@Produces(MediaType.APPLICATION_JSON)
 	public ShoppingCart delete(@PathParam("cartId") String cartId,
 							   @PathParam("itemId") String itemId,
-							   @PathParam("quantity") int quantity) throws Exception {
+							   @PathParam("quantity") int quantity) {
 
 		List<ShoppingCartItem> toRemoveList = new ArrayList<>();
 
