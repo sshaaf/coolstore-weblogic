@@ -1,26 +1,24 @@
 package com.redhat.coolstore.utils;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.ejb.Singleton;
-import javax.ejb.Startup;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 import java.util.logging.Logger;
 
-@Singleton
-@Startup
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
+
+@ApplicationScoped
 public class StartupListener {
 
     @Inject
     Logger log;
 
-    @PostConstruct
-    public void onStartup() {
+    void onStart(@Observes StartupEvent ev) {
         log.info("CoolStore Application Started");
     }
 
-    @PreDestroy
-    public void onShutdown() {
+    void onStop(@Observes ShutdownEvent ev) {
         log.info("CoolStore Application Stopping");
     }
 
